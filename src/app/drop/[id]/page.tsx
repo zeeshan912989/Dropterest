@@ -591,14 +591,26 @@ export default function DedicatedDropPage() {
                     {/* Main Image with Natural Adaptive Height & Zoom Click */}
                     <div
                       onClick={() => setIsZoomOpen(true)}
-                      className="relative w-full h-full flex items-center justify-center cursor-zoom-in group"
+                      onContextMenu={(e) => e.preventDefault()}
+                      onDragStart={(e) => e.preventDefault()}
+                      className="relative w-full h-full flex items-center justify-center cursor-zoom-in group select-none"
                       title="Click to Enlarge / Zoom"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={post.previewUrl || post.image || "/architecture-pavilion.jpeg"}
                         alt={post.title || "Design Asset"}
-                        className="w-full h-auto max-h-[85vh] object-contain block mx-auto transition-transform duration-300 group-hover:scale-[1.01]"
+                        draggable={false}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
+                        className="w-full h-auto max-h-[85vh] object-contain block mx-auto transition-transform duration-300 group-hover:scale-[1.01] select-none pointer-events-none"
+                      />
+
+                      {/* Protective Anti-Drag Shield */}
+                      <div
+                        className="absolute inset-0 z-0 bg-transparent select-none"
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
                       />
 
                       {/* Bottom-Right Zoom Button */}
@@ -608,7 +620,7 @@ export default function DedicatedDropPage() {
                           e.stopPropagation();
                           setIsZoomOpen(true);
                         }}
-                        className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-black/70 hover:bg-black text-white backdrop-blur-md flex items-center justify-center shadow-md cursor-pointer border border-white/15 hover:scale-110 active:scale-95 transition-all"
+                        className="absolute bottom-3 right-3 z-20 w-9 h-9 rounded-full bg-black/70 hover:bg-black text-white backdrop-blur-md flex items-center justify-center shadow-md cursor-pointer border border-white/15 hover:scale-110 active:scale-95 transition-all"
                         title="Enlarge Image"
                       >
                         <Maximize2 className="w-4 h-4" />
@@ -1074,7 +1086,10 @@ export default function DedicatedDropPage() {
               <img
                 src={post.previewUrl || post.image || "/architecture-pavilion.jpeg"}
                 alt={post.title || "Design Asset"}
-                className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl border border-white/10"
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                onDragStart={(e) => e.preventDefault()}
+                className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl border border-white/10 select-none pointer-events-none"
               />
 
               {/* Pinterest Visual Search Handles / Dots */}

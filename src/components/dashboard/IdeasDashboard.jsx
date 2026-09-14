@@ -71,7 +71,7 @@ function SafePinCardImage({ src, alt, className }) {
 
   if (hasError || !imgSrc) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-[#F3EFE6] text-[#A1A1AA] p-4 text-center select-none">
+      <div className="w-full h-full flex flex-col items-center justify-center bg-[#F3EFE6] text-[#A1A1AA] p-4 text-center select-none pointer-events-none">
         <Sparkles className="w-7 h-7 text-[#A1A1AA] mb-1.5" />
         <span className="text-[11px] font-semibold text-[#71717A] truncate max-w-[90%]">{alt || "Visual Asset"}</span>
       </div>
@@ -79,16 +79,29 @@ function SafePinCardImage({ src, alt, className }) {
   }
 
   return (
-    <Image
-      src={imgSrc}
-      alt={alt || "Visual Asset"}
-      fill
-      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-      className={className}
-      onError={() => {
-        setHasError(true);
-      }}
-    />
+    <div
+      className="relative w-full h-full select-none"
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+    >
+      <Image
+        src={imgSrc}
+        alt={alt || "Visual Asset"}
+        fill
+        draggable={false}
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+        className={`${className} select-none pointer-events-none`}
+        onError={() => {
+          setHasError(true);
+        }}
+      />
+      {/* Invisible Anti-Drag & Right-Click Theft Guard */}
+      <div
+        className="absolute inset-0 z-10 bg-transparent select-none"
+        onContextMenu={(e) => e.preventDefault()}
+        onDragStart={(e) => e.preventDefault()}
+      />
+    </div>
   );
 }
 

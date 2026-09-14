@@ -38,3 +38,15 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #D4D4D8;
 }
+
+/* Anti-Theft Image Protection */
+img, video, canvas, [data-protected-image] {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}

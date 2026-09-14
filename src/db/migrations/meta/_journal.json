@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789363122756,
+      "tag": "0000_amazing_lyja",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789369232188,
+      "tag": "0001_powerful_firebird",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789371196705,
+      "tag": "0002_acoustic_blue_blade",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789374554721,
+      "tag": "0003_unusual_war_machine",
+      "breakpoints": true
+    }
+  ]
+}

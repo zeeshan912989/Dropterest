@@ -504,7 +504,12 @@ export default function CreatorProfilePage() {
                   return (
                     <div
                       key={drop.id}
-                      onClick={() => router.push(`/drop/${drop.id}`)}
+                      onClick={() => {
+                        try {
+                          sessionStorage.setItem(`drop_cache_${drop.id}`, JSON.stringify(drop));
+                        } catch {}
+                        router.push(`/drop/${drop.id}`);
+                      }}
                       className="break-inside-avoid group relative rounded-[5px] overflow-hidden bg-white border border-black/[0.06] shadow-xs hover:shadow-xl transition-all duration-300 cursor-pointer"
                     >
                       <div className="relative w-full aspect-[3/4.2] rounded-[5px] overflow-hidden bg-[#FAF8F5]">

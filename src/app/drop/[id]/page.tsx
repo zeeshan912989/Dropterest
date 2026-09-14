@@ -49,13 +49,31 @@ export default function DedicatedDropPage() {
   const currentUser = session?.user;
   const currentUserId = currentUser?.id;
 
-  // Post & Creator State
-  const [loading, setLoading] = useState(true);
-  const [post, setPost] = useState<any>(null);
+  // Post & Creator State with instant 0ms memory cache
+  const [post, setPost] = useState<any>(() => {
+    if (typeof window !== "undefined" && dropId) {
+      try {
+        const cached = sessionStorage.getItem(`drop_cache_${dropId}`);
+        if (cached) {
+          return JSON.parse(cached);
+        }
+      } catch {}
+    }
+    return null;
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && dropId) {
+      try {
+        return !sessionStorage.getItem(`drop_cache_${dropId}`);
+      } catch {}
+    }
+    return true;
+  });
   
   // Real Database Likes
   const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
+  const [likesCount, setLikesCount] = useState(() => (post?.likesCount || 0));
   const [isLiking, setIsLiking] = useState(false);
 
   // Real Database Comments
@@ -89,7 +107,11 @@ export default function DedicatedDropPage() {
   // Fetch Post, Real Likes, Real Comments & Recommendations in parallel
   useEffect(() => {
     if (!dropId) return;
-    setLoading(true);
+
+    // Only show loading spinner if no initial post in memory
+    if (!post) {
+      setLoading(true);
+    }
 
     const loadAllData = async () => {
       try {
@@ -103,6 +125,9 @@ export default function DedicatedDropPage() {
         if (postRes.status === "fulfilled" && postRes.value?.success && postRes.value.post) {
           const postData = postRes.value.post;
           setPost(postData);
+          try {
+            sessionStorage.setItem(`drop_cache_${dropId}`, JSON.stringify(postData));
+          } catch {}
           setLikesCount(postData.likesCount || 0);
 
           if (typeof document !== "undefined" && postData.title) {
@@ -122,7 +147,7 @@ export default function DedicatedDropPage() {
               })
               .catch(() => {});
           }
-        } else if (postRes.status === "fulfilled" && !postRes.value?.success) {
+        } else if (postRes.status === "fulfilled" && !postRes.value?.success && !post) {
           toast.error(postRes.value?.error || "Drop not found");
         }
 
@@ -150,7 +175,9 @@ export default function DedicatedDropPage() {
             .catch(() => {});
         }
       } catch {
-        toast.error("Failed to load drop details");
+        if (!post) {
+          toast.error("Failed to load drop details");
+        }
       } finally {
         setLoading(false);
       }

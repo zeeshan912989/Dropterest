@@ -2109,7 +2109,12 @@ export default function IdeasDashboard() {
                     return (
                       <div
                         key={pin.id}
-                        onClick={() => router.push(`/drop/${pin.id}`)}
+                        onClick={() => {
+                          try {
+                            sessionStorage.setItem(`drop_cache_${pin.id}`, JSON.stringify(pin));
+                          } catch {}
+                          router.push(`/drop/${pin.id}`);
+                        }}
                         className="break-inside-avoid group relative rounded-[5px] overflow-hidden bg-white border border-black/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_14px_30px_rgba(0,0,0,0.09)] transition-all duration-300 cursor-pointer"
                       >
                         <div className={`relative w-full ${pin.aspect || "aspect-[3/4.2]"} rounded-[5px] overflow-hidden bg-[#F3EFE6]`}>

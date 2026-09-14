@@ -554,11 +554,11 @@ export default function DedicatedDropPage() {
             </div>
           ) : (
             <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
-              {/* ================= LEFT SIDE: MAIN DROP CARD (ONLY 5px RADIUS) ================= */}
+              {/* ================= LEFT SIDE: MAIN DROP CARD (ADAPTS TO IMAGE DIMENSIONS) ================= */}
               <div className="w-full lg:w-[58%] xl:w-[62%] shrink-0">
-                <div className="bg-white rounded-[5px] overflow-hidden border border-black/15 shadow-xl grid grid-cols-1 md:grid-cols-12 sticky top-20">
-                  {/* Left Side: Dark High-Res Visual Canvas (5px radius) */}
-                  <div className="md:col-span-6 bg-black flex items-center justify-center relative min-h-[400px] md:min-h-[560px] p-4 select-none">
+                <div className="bg-white rounded-[5px] overflow-hidden border border-black/15 shadow-xl grid grid-cols-1 md:grid-cols-12 sticky top-20 items-stretch">
+                  {/* Left Side: Clean Natural Visual Display (Fits Image Proportion) */}
+                  <div className="md:col-span-6 lg:col-span-6 bg-[#0a0a0a] flex items-center justify-center relative min-h-[350px] select-none overflow-hidden">
                     {/* Top-Left Back Circle Button */}
                     <Link
                       href="/ideas"
@@ -568,14 +568,13 @@ export default function DedicatedDropPage() {
                       <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
                     </Link>
 
-                    {/* Main Image (5px radius) */}
-                    <div className="relative w-full h-full max-h-[500px] aspect-[3/4.2] rounded-[5px] overflow-hidden shadow-2xl bg-neutral-900 flex items-center justify-center">
-                      <Image
+                    {/* Main Image with Natural Adaptive Height */}
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={post.previewUrl || post.image || "/architecture-pavilion.jpeg"}
                         alt={post.title || "Design Asset"}
-                        fill
-                        priority
-                        className="object-contain"
+                        className="w-full h-auto max-h-[85vh] object-contain block mx-auto"
                       />
 
                       {/* Bottom-Right Zoom Button */}
@@ -585,9 +584,9 @@ export default function DedicatedDropPage() {
                     </div>
                   </div>
 
-                  {/* Right Side: Interaction Bar, Creator, CTA & Comments */}
-                  <div className="md:col-span-6 p-5 sm:p-6 flex flex-col justify-between space-y-4 bg-white">
-                    <div className="space-y-4">
+                  {/* Right Side: Interaction Bar, Creator, CTA & Comments (Aligned to Image Height) */}
+                  <div className="md:col-span-6 lg:col-span-6 p-5 sm:p-6 lg:p-7 flex flex-col justify-between space-y-4 bg-white min-h-[380px] max-h-[85vh]">
+                    <div className="space-y-4 flex-1 flex flex-col min-h-0">
                       {/* Top Action Bar */}
                       <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
                         <div className="flex items-center gap-1 sm:gap-1.5">
@@ -834,14 +833,14 @@ export default function DedicatedDropPage() {
                         </div>
                       )}
 
-                      {/* Real Database Comments Section */}
-                      <div className="pt-3 border-t border-black/[0.06] space-y-3">
+                      {/* Real Database Comments Section (Fills flexible space according to image) */}
+                      <div className="pt-3 border-t border-black/[0.06] space-y-3 flex-1 flex flex-col min-h-0">
                         <h4 className="text-xs font-bold text-[#18181B] flex items-center gap-1 cursor-pointer">
                           <span>{comments.length} {comments.length === 1 ? "Comment" : "Comments"}</span>
                           <span className="text-[10px] text-[#71717A]">⌄</span>
                         </h4>
 
-                        <div className="space-y-2.5 max-h-36 overflow-y-auto pr-1">
+                        <div className="space-y-2.5 flex-1 min-h-[60px] max-h-[280px] overflow-y-auto pr-1">
                           {comments.length === 0 ? (
                             <p className="text-xs text-[#71717A] py-2">No comments yet. Be the first to start the conversation!</p>
                           ) : (

@@ -1335,10 +1335,20 @@ export default function IdeasDashboard() {
                   <button
                     type="button"
                     onClick={handlePublishPin}
-                    className="px-6 py-2 rounded-full bg-[#4DE3A5] hover:bg-[#60ebb0] text-[#064E3B] text-xs font-semibold shadow-[0_4px_16px_rgba(77,227,165,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                    disabled={isPublishing}
+                    className="px-6 py-2 rounded-full bg-[#4DE3A5] hover:bg-[#60ebb0] disabled:bg-[#A7F3D0] text-[#064E3B] text-xs font-semibold shadow-[0_4px_16px_rgba(77,227,165,0.35)] hover:scale-105 active:scale-95 disabled:scale-100 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-2"
                   >
-                    <span>Publish</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    {isPublishing ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#064E3B]" />
+                        <span>Publishing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Publish</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -2099,7 +2109,7 @@ export default function IdeasDashboard() {
                     return (
                       <div
                         key={pin.id}
-                        onClick={() => router.push(`/drop/${pin.id}`)}
+                        onClick={() => setSelectedPin(pin)}
                         className="break-inside-avoid group relative rounded-[5px] overflow-hidden bg-white border border-black/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_14px_30px_rgba(0,0,0,0.09)] transition-all duration-300 cursor-pointer"
                       >
                         <div className={`relative w-full ${pin.aspect || "aspect-[3/4.2]"} rounded-[5px] overflow-hidden bg-[#F3EFE6]`}>

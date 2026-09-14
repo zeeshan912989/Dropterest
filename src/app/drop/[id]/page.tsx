@@ -86,29 +86,33 @@ export default function DedicatedDropPage() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch Post, Real Likes, Real Comments & Recommendations
+  // Fetch Post, Real Likes, Real Comments & Recommendations in parallel
   useEffect(() => {
     if (!dropId) return;
     setLoading(true);
 
-    // 1. Fetch Post Details
-    fetch(`/api/posts/${dropId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.post) {
-          setPost(data.post);
-          setLikesCount(data.post.likesCount || 0);
+    const loadAllData = async () => {
+      try {
+        const [postRes, likeRes, commentsRes, relatedRes] = await Promise.allSettled([
+          fetch(`/api/posts/${dropId}`).then((res) => res.json()),
+          fetch(`/api/posts/${dropId}/like`).then((res) => res.json()),
+          fetch(`/api/posts/${dropId}/comments`).then((res) => res.json()),
+          fetch(`/api/posts/${dropId}/related`).then((res) => res.json()),
+        ]);
 
-          if (typeof document !== "undefined" && data.post.title) {
-            document.title = `${data.post.title} — Dropterest`;
+        if (postRes.status === "fulfilled" && postRes.value?.success && postRes.value.post) {
+          const postData = postRes.value.post;
+          setPost(postData);
+          setLikesCount(postData.likesCount || 0);
+
+          if (typeof document !== "undefined" && postData.title) {
+            document.title = `${postData.title} — Dropterest`;
           }
 
-          // Real view count increment
           fetch(`/api/posts/${dropId}/view`, { method: "POST" }).catch(() => {});
 
-          // Fetch Creator Follow State
-          if (data.post.creatorId) {
-            fetch(`/api/users/${data.post.creatorId}/follow`)
+          if (postData.creatorId) {
+            fetch(`/api/users/${postData.creatorId}/follow`)
               .then((fRes) => fRes.json())
               .then((fData) => {
                 if (fData.success) {
@@ -118,40 +122,23 @@ export default function DedicatedDropPage() {
               })
               .catch(() => {});
           }
-        } else {
-          toast.error(data.error || "Drop not found");
+        } else if (postRes.status === "fulfilled" && !postRes.value?.success) {
+          toast.error(postRes.value?.error || "Drop not found");
         }
-      })
-      .catch(() => toast.error("Failed to load drop details"))
-      .finally(() => setLoading(false));
 
-    // 2. Fetch Real Likes Status from Database
-    fetch(`/api/posts/${dropId}/like`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setIsLiked(data.isLiked);
-          setLikesCount(data.likesCount);
+        if (likeRes.status === "fulfilled" && likeRes.value?.success) {
+          setIsLiked(likeRes.value.isLiked);
+          if (likeRes.value.likesCount !== undefined) {
+            setLikesCount(likeRes.value.likesCount);
+          }
         }
-      })
-      .catch(() => {});
 
-    // 3. Fetch Real Persistent Comments from Database
-    fetch(`/api/posts/${dropId}/comments`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.comments) {
-          setComments(data.comments);
+        if (commentsRes.status === "fulfilled" && commentsRes.value?.success) {
+          setComments(commentsRes.value.comments || []);
         }
-      })
-      .catch(() => {});
 
-    // 4. Fetch Smart Recommendations Engine
-    fetch(`/api/posts/${dropId}/related`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.related && data.related.length > 0) {
-          setRelatedPosts(data.related);
+        if (relatedRes.status === "fulfilled" && relatedRes.value?.success && relatedRes.value.related?.length > 0) {
+          setRelatedPosts(relatedRes.value.related);
         } else {
           fetch(`/api/posts`)
             .then((pRes) => pRes.json())
@@ -162,8 +149,14 @@ export default function DedicatedDropPage() {
             })
             .catch(() => {});
         }
-      })
-      .catch(() => {});
+      } catch {
+        toast.error("Failed to load drop details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAllData();
   }, [dropId]);
 
   const isOwnPost = Boolean(currentUserId && post?.creatorId === currentUserId);

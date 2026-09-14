@@ -19,9 +19,6 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
-
     const originalName = file.name || "upload.jpg";
     const extension = originalName.split(".").pop()?.toLowerCase() || "jpg";
     const baseName = originalName
@@ -30,11 +27,32 @@ export async function POST(req: NextRequest) {
       .slice(0, 50);
 
     const uniqueFileName = `${Date.now()}_${baseName}.${extension}`;
-    const filePath = path.join(uploadsDir, uniqueFileName);
 
-    await writeFile(filePath, buffer);
+    // Attempt writing to public/uploads if local disk is available
+    let localUrl = `/uploads/${uniqueFileName}`;
+    try {
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      await mkdir(uploadsDir, { recursive: true });
+      const filePath = path.join(uploadsDir, uniqueFileName);
+      await writeFile(filePath, buffer);
+    } catch {
+      // Ignored for ephemeral / serverless read-only filesystems
+    }
 
-    const url = `/uploads/${uniqueFileName}`;
+    // If it's an image under 4.5MB, generate Base64 data URL so it's 100% durable on Vercel/cloud
+    let dataUrl = "";
+    const isImage =
+      file.type?.startsWith("image/") ||
+      ["jpg", "jpeg", "png", "webp", "gif", "svg", "avif"].includes(extension);
+
+    if (isImage && buffer.length < 4.5 * 1024 * 1024) {
+      const mime =
+        file.type || (extension === "jpg" ? "image/jpeg" : `image/${extension}`);
+      dataUrl = `data:${mime};base64,${buffer.toString("base64")}`;
+    }
+
+    const finalUrl = dataUrl || localUrl;
+
     const sizeInMB = file.size / (1024 * 1024);
     const sizeFormatted =
       sizeInMB >= 1
@@ -43,7 +61,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      url,
+      url: finalUrl,
+      previewUrl: finalUrl,
       fileName: uniqueFileName,
       originalName,
       fileSize: sizeFormatted,
@@ -57,3 +76,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

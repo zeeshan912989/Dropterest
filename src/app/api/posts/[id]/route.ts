@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { posts, profiles, user } from "@/db/schema";
+import {
+  posts,
+  profiles,
+  user,
+  postLikes,
+  postComments,
+  postDownloads,
+  postPurchases,
+} from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth/auth";
 import { headers } from "next/headers";
@@ -92,10 +100,11 @@ export async function DELETE(
       .limit(1);
 
     if (!existingPost) {
-      return NextResponse.json(
-        { success: false, error: "Drop not found." },
-        { status: 404 }
-      );
+      // Idempotent: already deleted
+      return NextResponse.json({
+        success: true,
+        message: "Drop deleted successfully ✦",
+      });
     }
 
     // Authorization check: User must be creator of the post
@@ -105,6 +114,12 @@ export async function DELETE(
         { status: 403 }
       );
     }
+
+    // Delete child records first to ensure no DB constraint issues
+    await db.delete(postLikes).where(eq(postLikes.postId, id)).catch(() => {});
+    await db.delete(postComments).where(eq(postComments.postId, id)).catch(() => {});
+    await db.delete(postDownloads).where(eq(postDownloads.postId, id)).catch(() => {});
+    await db.delete(postPurchases).where(eq(postPurchases.postId, id)).catch(() => {});
 
     // Delete post
     await db.delete(posts).where(eq(posts.id, id));
@@ -121,3 +136,4 @@ export async function DELETE(
     );
   }
 }
+

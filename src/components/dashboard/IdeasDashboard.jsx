@@ -57,7 +57,40 @@ import InviteFriendsModal from "./InviteFriendsModal";
 import SettingsModal from "./SettingsModal";
 import PostDetailModal from "./PostDetailModal";
 import { useInfinitePins } from "@/hooks/useInfinitePins";
+import { useQueryClient } from "@tanstack/react-query";
 import { LoadMoreTrigger } from "@/components/feed/LoadMoreTrigger";
+
+function SafePinCardImage({ src, alt, className }) {
+  const [imgSrc, setImgSrc] = useState(src || "/architecture-pavilion.jpeg");
+  const [hasError, setHasError] = useState(!src);
+
+  useEffect(() => {
+    setImgSrc(src || "/architecture-pavilion.jpeg");
+    setHasError(!src);
+  }, [src]);
+
+  if (hasError || !imgSrc) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-[#F3EFE6] text-[#A1A1AA] p-4 text-center select-none">
+        <Sparkles className="w-7 h-7 text-[#A1A1AA] mb-1.5" />
+        <span className="text-[11px] font-semibold text-[#71717A] truncate max-w-[90%]">{alt || "Visual Asset"}</span>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt || "Visual Asset"}
+      fill
+      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+      className={className}
+      onError={() => {
+        setHasError(true);
+      }}
+    />
+  );
+}
 
 const INITIAL_PINS = [];
 
@@ -111,6 +144,7 @@ const SAMPLE_PRODUCTS = [];
 
 export default function IdeasDashboard() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: session, isPending } = authClient.useSession();
   const isAuthenticated = Boolean(session?.user);
   const user = session?.user;
@@ -123,6 +157,7 @@ export default function IdeasDashboard() {
   const [contentTypeFilter, setContentTypeFilter] = useState("all"); // "all", "free", "sell"
   const [searchQuery, setSearchQuery] = useState("");
   const [pins, setPins] = useState(INITIAL_PINS);
+  const [deletedPinIds, setDeletedPinIds] = useState(() => new Set());
   const [savedPins, setSavedPins] = useState({});
   const [boards, setBoards] = useState([]);
   const [selectedPin, setSelectedPin] = useState(null);
@@ -314,16 +349,41 @@ export default function IdeasDashboard() {
     if (!window.confirm("Are you sure you want to delete this drop? This action cannot be undone.")) {
       return;
     }
+
+    // 1. Instant Real-Time UI Eviction (0ms delay)
+    setDeletedPinIds((prev) => {
+      const next = new Set(prev);
+      next.add(postId);
+      return next;
+    });
+    setLocalPublishedPins((prev) => prev.filter((p) => p.id !== postId));
+    setPins((prev) => prev.filter((p) => p.id !== postId));
+    if (selectedPin?.id === postId) {
+      setSelectedPin(null);
+    }
+    showToast("Deleting drop... ✦");
+
     try {
       const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
       const data = await res.json();
       if (res.ok && data.success) {
-        setPins((prev) => prev.filter((p) => p.id !== postId));
         showToast("Drop deleted successfully ✦");
+        queryClient.invalidateQueries({ queryKey: ["pins"] });
       } else {
+        // Rollback on server error
+        setDeletedPinIds((prev) => {
+          const next = new Set(prev);
+          next.delete(postId);
+          return next;
+        });
         showToast(data.error || "Failed to delete drop");
       }
     } catch {
+      setDeletedPinIds((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
       showToast("Error deleting drop");
     }
   };
@@ -577,29 +637,35 @@ export default function IdeasDashboard() {
     }
   };
 
-  // Combine server infinite pins with locally published pins
+  // Combine server infinite pins with locally published pins, excluding deleted drops
   const filteredPins = useMemo(() => {
-    const formattedInfinite = infinitePins.map((p) => ({
-      ...p,
-      image: p.previewUrl,
-      author: p.creatorName || p.creatorUsername || "Creator",
-      avatar: p.creatorAvatar || null,
-      aspect: "aspect-[3/4.2]",
-      likes: p.likesCount || 0,
-      saves: p.savesCount || 0,
-      downloadsCount: p.downloadsCount || 0,
-      tag: (p.tags && p.tags[0]) || "Curated",
-    }));
+    const formattedInfinite = infinitePins
+      .filter((p) => p && p.id && !deletedPinIds.has(p.id))
+      .map((p) => ({
+        ...p,
+        image: p.previewUrl,
+        author: p.creatorName || p.creatorUsername || "Creator",
+        avatar: p.creatorAvatar || null,
+        aspect: "aspect-[3/4.2]",
+        likes: p.likesCount || 0,
+        saves: p.savesCount || 0,
+        downloadsCount: p.downloadsCount || 0,
+        tag: (p.tags && p.tags[0]) || "Curated",
+      }));
 
-    const combined = [...localPublishedPins, ...formattedInfinite];
+    const validLocalPins = localPublishedPins.filter(
+      (p) => p && p.id && !deletedPinIds.has(p.id)
+    );
+    const combined = [...validLocalPins, ...formattedInfinite];
     const seen = new Set();
     return combined.filter((pin) => {
       if (!pin || !pin.id) return false;
+      if (deletedPinIds.has(pin.id)) return false;
       if (seen.has(pin.id)) return false;
       seen.add(pin.id);
       return true;
     });
-  }, [infinitePins, localPublishedPins]);
+  }, [infinitePins, localPublishedPins, deletedPinIds]);
 
   // Saved pins list
   const userSavedPinsList = useMemo(() => {
@@ -1207,8 +1273,8 @@ export default function IdeasDashboard() {
                         onClick={() => setSelectedPin(pin)}
                         className="break-inside-avoid group relative rounded-2xl overflow-hidden bg-white border border-black/[0.06] shadow-xs cursor-pointer"
                       >
-                        <div className={`relative w-full ${pin.aspect} overflow-hidden bg-[#F3EFE6]`}>
-                          <Image src={pin.image} alt={pin.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className={`relative w-full ${pin.aspect || "aspect-[3/4.2]"} overflow-hidden bg-[#F3EFE6]`}>
+                          <SafePinCardImage src={pin.image || pin.previewUrl} alt={pin.title} className="object-cover group-hover:scale-105 transition-transform duration-500" />
                         </div>
                         <div className="p-2.5 flex items-center justify-between text-xs">
                           <span className="font-medium text-xs text-[#18181B] truncate">{pin.title}</span>
@@ -2037,19 +2103,11 @@ export default function IdeasDashboard() {
                         className="break-inside-avoid group relative rounded-[5px] overflow-hidden bg-white border border-black/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_14px_30px_rgba(0,0,0,0.09)] transition-all duration-300 cursor-pointer"
                       >
                         <div className={`relative w-full ${pin.aspect || "aspect-[3/4.2]"} rounded-[5px] overflow-hidden bg-[#F3EFE6]`}>
-                          {displayImg ? (
-                            <Image
-                              src={displayImg}
-                              alt={pin.title || "Design"}
-                              fill
-                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                              className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-[#EFEAE1] text-[#71717A]">
-                              <Sparkles className="w-8 h-8 text-[#A1A1AA]" />
-                            </div>
-                          )}
+                          <SafePinCardImage
+                            src={displayImg}
+                            alt={pin.title || "Design"}
+                            className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                          />
 
                           {/* Permanent Corner Badge for Marketplace / Free */}
                           <div className="absolute top-2.5 left-2.5 z-10">
@@ -3032,7 +3090,14 @@ export default function IdeasDashboard() {
         isSaved={Boolean(selectedPin && savedPins[selectedPin.id])}
         onSaveToggle={(pinId, e) => toggleSave(pinId, e)}
         onDeletePost={(deletedId) => {
+          setDeletedPinIds((prev) => {
+            const next = new Set(prev);
+            next.add(deletedId);
+            return next;
+          });
+          setLocalPublishedPins((prev) => prev.filter((p) => p.id !== deletedId));
           setPins((prev) => prev.filter((p) => p.id !== deletedId));
+          queryClient.invalidateQueries({ queryKey: ["pins"] });
         }}
         onSelectRelatedPost={(relatedPost) => {
           setSelectedPin({

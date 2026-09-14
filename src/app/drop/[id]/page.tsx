@@ -544,9 +544,15 @@ export default function DedicatedDropPage() {
 
           <div className="flex items-center gap-2">
             {currentUser ? (
-              <div className="w-8 h-8 rounded-[5px] bg-[#6366F1] text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                {(currentUser.name || "A")[0].toUpperCase()}
-              </div>
+              currentUser.image ? (
+                <div className="w-8 h-8 rounded-[5px] overflow-hidden bg-black/10 shrink-0 relative shadow-xs">
+                  <img src={currentUser.image} alt={currentUser.name || "Account"} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-[5px] bg-[#E60023] text-white flex items-center justify-center font-bold text-xs shadow-xs select-none">
+                  {(currentUser.name || "A")[0]?.toUpperCase()}
+                </div>
+              )
             ) : (
               <Link
                 href="/login"
@@ -888,20 +894,34 @@ export default function DedicatedDropPage() {
                           {comments.length === 0 ? (
                             <p className="text-xs text-[#71717A] py-2">No comments yet. Be the first to start the conversation!</p>
                           ) : (
-                            comments.map((c) => (
-                              <div key={c.id} className="flex items-start gap-2.5 text-xs">
-                                <div className="w-7 h-7 rounded-[5px] overflow-hidden bg-black/10 shrink-0 relative mt-0.5">
-                                  <Image src={c.avatar || "/ceramics.jpeg"} alt={c.author} fill className="object-cover" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-baseline gap-1.5">
-                                    <span className="font-bold text-[#18181B]">{c.author}</span>
-                                    <span className="text-[10px] text-[#71717A] font-mono">{c.time}</span>
+                            comments.map((c) => {
+                              const avatarUrl = c.avatar && !c.avatar.includes("ceramics") ? c.avatar : null;
+                              const initial = (c.author || "U")[0]?.toUpperCase() || "U";
+                              return (
+                                <div key={c.id} className="flex items-start gap-2.5 text-xs">
+                                  {avatarUrl ? (
+                                    <div className="w-7 h-7 rounded-[5px] overflow-hidden bg-black/10 shrink-0 relative mt-0.5 shadow-xs">
+                                      <img
+                                        src={avatarUrl}
+                                        alt={c.author || "User"}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="w-7 h-7 rounded-[5px] bg-[#E60023] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 shadow-xs select-none">
+                                      {initial}
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-baseline gap-1.5">
+                                      <span className="font-bold text-[#18181B]">{c.author}</span>
+                                      <span className="text-[10px] text-[#71717A] font-mono">{c.time}</span>
+                                    </div>
+                                    <p className="text-[#52525B] text-xs break-words leading-relaxed">{c.text}</p>
                                   </div>
-                                  <p className="text-[#52525B] text-xs break-words leading-relaxed">{c.text}</p>
                                 </div>
-                              </div>
-                            ))
+                              );
+                            })
                           )}
                         </div>
 

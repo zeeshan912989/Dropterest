@@ -177,7 +177,7 @@ export default function PostDetailModal({
     e.preventDefault();
     if (!newComment.trim()) return;
     const authorName = currentUser?.name || "You";
-    const authorAvatar = currentUser?.image || "/ceramics.jpeg";
+    const authorAvatar = currentUser?.image || null;
     setComments((prev) => [
       ...prev,
       {
@@ -634,20 +634,34 @@ export default function PostDetailModal({
 
                   {/* Comment List */}
                   <div className="space-y-2.5 max-h-36 overflow-y-auto pr-1">
-                    {comments.map((c) => (
-                      <div key={c.id} className="flex items-start gap-2.5 text-xs">
-                        <div className="w-7 h-7 rounded-full overflow-hidden bg-black/10 shrink-0 relative mt-0.5">
-                          <Image src={c.avatar || "/ceramics.jpeg"} alt={c.author} fill className="object-cover" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="font-bold text-[#18181B]">{c.author}</span>
-                            <span className="text-[10px] text-[#71717A] font-mono">{c.time}</span>
+                    {comments.map((c) => {
+                      const avatarUrl = c.avatar && !c.avatar.includes("ceramics") ? c.avatar : null;
+                      const initial = (c.author || "U")[0]?.toUpperCase() || "U";
+                      return (
+                        <div key={c.id} className="flex items-start gap-2.5 text-xs">
+                          {avatarUrl ? (
+                            <div className="w-7 h-7 rounded-[5px] overflow-hidden bg-black/10 shrink-0 relative mt-0.5 shadow-xs">
+                              <img
+                                src={avatarUrl}
+                                alt={c.author || "User"}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-7 h-7 rounded-[5px] bg-[#E60023] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 shadow-xs select-none">
+                              {initial}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="font-bold text-[#18181B]">{c.author}</span>
+                              <span className="text-[10px] text-[#71717A] font-mono">{c.time}</span>
+                            </div>
+                            <p className="text-[#52525B] text-xs break-words leading-relaxed">{c.text}</p>
                           </div>
-                          <p className="text-[#52525B] text-xs break-words leading-relaxed">{c.text}</p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Add a comment Pill Input (Screenshot Exact Match) */}

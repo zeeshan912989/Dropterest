@@ -23,6 +23,7 @@ export async function GET(
         text: postComments.text,
         createdAt: postComments.createdAt,
         author: user.name,
+        userImage: user.image,
         avatar: profiles.avatarUrl,
         username: profiles.username,
       })
@@ -37,7 +38,7 @@ export async function GET(
       comments: comments.map((c) => ({
         ...c,
         author: c.author || "Creator",
-        avatar: c.avatar || userAvatarFallback(c.author),
+        avatar: c.avatar || c.userImage || null,
         time: formatRelativeTime(c.createdAt),
       })),
       total: comments.length,
@@ -105,7 +106,7 @@ export async function POST(
         text: comment.text,
         createdAt: comment.createdAt,
         author: session.user.name || "You",
-        avatar: profile?.avatarUrl || session.user.image || "/ceramics.jpeg",
+        avatar: profile?.avatarUrl || session.user.image || null,
         username: profile?.username || "",
         time: "Just now",
       },

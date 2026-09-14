@@ -52,8 +52,21 @@ function LoginForm() {
       }
 
       toast.success("Welcome back! Signed in successfully ✦");
-      router.push(redirectPath);
-      router.refresh();
+      
+      let targetPath = redirectPath;
+      if (targetPath.startsWith("http://") || targetPath.startsWith("https://")) {
+        try {
+          const parsed = new URL(targetPath);
+          targetPath = parsed.pathname + parsed.search;
+        } catch {
+          targetPath = "/ideas";
+        }
+      }
+      if (!targetPath.startsWith("/")) {
+        targetPath = `/${targetPath}`;
+      }
+
+      window.location.href = targetPath;
     } catch (err) {
       console.error("[LOGIN ERROR]:", err);
       setServerError("An unexpected authentication error occurred. Please try again.");

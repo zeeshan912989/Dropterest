@@ -74,9 +74,8 @@ export default function SignupPage() {
       
       setIsSuccessVerificationRequired(true);
       setTimeout(() => {
-        router.push("/ideas");
-        router.refresh();
-      }, 2000);
+        window.location.href = "/ideas";
+      }, 1500);
     } catch (err: unknown) {
       console.error("[SIGNUP ERROR]:", err);
       const message = err instanceof Error ? err.message : "An unexpected signup error occurred. Please try again.";

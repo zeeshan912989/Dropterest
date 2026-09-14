@@ -25,6 +25,9 @@ import {
   Share2,
   MoreHorizontal,
   Maximize2,
+  ZoomIn,
+  ZoomOut,
+  X,
   Smile,
   ImageIcon,
   Send,
@@ -99,10 +102,27 @@ export default function DedicatedDropPage() {
   // Related & Recommendation Stream
   const [relatedPosts, setRelatedPosts] = useState<any[]>([]);
 
+  // Zoom Lightbox State
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+
   // Drawers & Nav
   const [activeDrawer, setActiveDrawer] = useState<"notifications" | "messages" | "settings" | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Keyboard Escape listener for Lightbox Zoom
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsZoomOpen(false);
+      }
+    };
+    if (isZoomOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isZoomOpen]);
 
   // Fetch Post, Real Likes, Real Comments & Recommendations in parallel
   useEffect(() => {
@@ -568,19 +588,31 @@ export default function DedicatedDropPage() {
                       <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
                     </Link>
 
-                    {/* Main Image with Natural Adaptive Height */}
-                    <div className="relative w-full h-full flex items-center justify-center">
+                    {/* Main Image with Natural Adaptive Height & Zoom Click */}
+                    <div
+                      onClick={() => setIsZoomOpen(true)}
+                      className="relative w-full h-full flex items-center justify-center cursor-zoom-in group"
+                      title="Click to Enlarge / Zoom"
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={post.previewUrl || post.image || "/architecture-pavilion.jpeg"}
                         alt={post.title || "Design Asset"}
-                        className="w-full h-auto max-h-[85vh] object-contain block mx-auto"
+                        className="w-full h-auto max-h-[85vh] object-contain block mx-auto transition-transform duration-300 group-hover:scale-[1.01]"
                       />
 
                       {/* Bottom-Right Zoom Button */}
-                      <div className="absolute bottom-3 right-3 z-10 w-8 h-8 rounded-full bg-black/70 hover:bg-black text-white backdrop-blur-md flex items-center justify-center shadow-md cursor-pointer border border-white/15">
-                        <Maximize2 className="w-3.5 h-3.5" />
-                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsZoomOpen(true);
+                        }}
+                        className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-black/70 hover:bg-black text-white backdrop-blur-md flex items-center justify-center shadow-md cursor-pointer border border-white/15 hover:scale-110 active:scale-95 transition-all"
+                        title="Enlarge Image"
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
@@ -968,6 +1000,142 @@ export default function DedicatedDropPage() {
           )}
         </main>
       </div>
+
+      {/* ================= PINTEREST-STYLE FULLSCREEN ZOOM LIGHTBOX ================= */}
+      {isZoomOpen && post && (
+        <div
+          onClick={() => setIsZoomOpen(false)}
+          className="fixed inset-0 z-50 bg-black/92 backdrop-blur-xl flex flex-col justify-between animate-in fade-in duration-200 select-none overflow-hidden"
+        >
+          {/* Top Bar */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full px-6 py-4 flex items-center justify-between z-30 bg-gradient-to-b from-black/80 to-transparent"
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setIsZoomOpen(false)}
+              className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 active:scale-95 border border-white/15"
+              title="Close (Esc)"
+            >
+              <X className="w-5 h-5 stroke-[2.5]" />
+            </button>
+
+            {/* Right Action Pill */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard?.writeText(shareableUrl);
+                  toast.success("Share link copied to clipboard ✦");
+                }}
+                className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all flex items-center gap-2 cursor-pointer hover:scale-105"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share</span>
+              </button>
+
+              {post.creatorUsername && (
+                <Link
+                  href={`/creator/${post.creatorUsername}`}
+                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all hidden sm:flex items-center gap-1.5"
+                >
+                  <span>Profile</span>
+                  <span className="text-[10px]">⌄</span>
+                </Link>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSaved(!isSaved);
+                  toast.success(isSaved ? "Removed from saved" : "Saved to collection ✦");
+                }}
+                className={`px-6 py-2 rounded-full text-xs font-bold transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95 ${
+                  isSaved ? "bg-white text-black" : "bg-[#E60023] hover:bg-[#CC001F] text-white"
+                }`}
+              >
+                {isSaved ? "Saved" : "Save"}
+              </button>
+            </div>
+          </div>
+
+          {/* Center Stage: Enlarged Image with Interactive Scaling */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 flex items-center justify-center p-4 sm:p-8 relative overflow-hidden"
+          >
+            <div
+              className="relative max-w-[90vw] max-h-[75vh] flex items-center justify-center transition-transform duration-300 ease-out"
+              style={{ transform: `scale(${zoomLevel})` }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={post.previewUrl || post.image || "/architecture-pavilion.jpeg"}
+                alt={post.title || "Design Asset"}
+                className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-2xl border border-white/10"
+              />
+
+              {/* Pinterest Visual Search Handles / Dots */}
+              <div className="absolute top-4 left-4 w-3.5 h-3.5 rounded-full border-2 border-white bg-[#4DE3A5] shadow-lg pointer-events-none animate-pulse" />
+              <div className="absolute top-4 right-4 w-3.5 h-3.5 rounded-full border-2 border-white bg-[#4DE3A5] shadow-lg pointer-events-none animate-pulse" />
+              <div className="absolute bottom-4 left-4 w-3.5 h-3.5 rounded-full border-2 border-white bg-[#4DE3A5] shadow-lg pointer-events-none animate-pulse" />
+              <div className="absolute bottom-4 right-4 w-3.5 h-3.5 rounded-full border-2 border-white bg-[#4DE3A5] shadow-lg pointer-events-none animate-pulse" />
+            </div>
+
+            {/* Floating Zoom Controls (+ / -) in Bottom Right */}
+            <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-30">
+              <button
+                type="button"
+                onClick={() => setZoomLevel((prev) => Math.min(2.5, Number((prev + 0.25).toFixed(2))))}
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white text-white hover:text-black backdrop-blur-md flex items-center justify-center shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 border border-white/20"
+                title="Zoom In"
+              >
+                <Plus className="w-5 h-5 stroke-[2.5]" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setZoomLevel((prev) => Math.max(0.75, Number((prev - 0.25).toFixed(2))))}
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white text-white hover:text-black backdrop-blur-md flex items-center justify-center shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 border border-white/20"
+                title="Zoom Out"
+              >
+                <span className="text-xl font-bold leading-none mb-0.5">&minus;</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Carousel Strip of Related Visuals */}
+          {relatedPosts.length > 0 && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full px-6 py-3 bg-gradient-to-t from-black/90 to-transparent flex items-center gap-3 overflow-x-auto z-30"
+            >
+              <span className="text-[11px] font-semibold text-white/60 shrink-0 uppercase tracking-wider">
+                Related Drops &rarr;
+              </span>
+              {relatedPosts.slice(0, 10).map((rp: any) => (
+                <div
+                  key={rp.id}
+                  onClick={() => {
+                    router.push(`/drop/${rp.id}`);
+                    setIsZoomOpen(false);
+                  }}
+                  className="w-14 h-18 sm:w-16 sm:h-20 rounded-[5px] overflow-hidden bg-white/10 shrink-0 cursor-pointer border border-white/20 hover:border-white hover:scale-105 transition-all shadow-md relative"
+                  title={rp.title}
+                >
+                  <Image
+                    src={rp.previewUrl || rp.image || "/architecture-pavilion.jpeg"}
+                    alt={rp.title || "Related"}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

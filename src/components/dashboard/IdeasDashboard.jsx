@@ -685,10 +685,12 @@ export default function IdeasDashboard() {
     return filteredPins.filter((p) => savedPins[p.id]);
   }, [filteredPins, savedPins]);
 
-  if (!mounted) {
+  if (!mounted || isPending) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center text-xs text-[#71717A]">
-        Loading your creative workspace...
+      <div className="min-h-screen bg-[#FAF9F5] flex flex-col items-center justify-center gap-3">
+        <div className="w-9 h-9 rounded-[5px] bg-[#E60023] text-white flex items-center justify-center font-bold text-sm shadow-sm animate-pulse select-none">
+          D
+        </div>
       </div>
     );
   }
